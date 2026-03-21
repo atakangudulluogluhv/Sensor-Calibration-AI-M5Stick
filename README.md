@@ -20,6 +20,9 @@ Using a PM2.5 air quality section from "Air Pollution on Seuol" dataset, the pro
 
 ## Results & Visualization
 By extracting the weights from the Python-trained model and deploying them to the microcontroller, the ESP32 successfully suppresses the simulated noise and drift. 
+![IMG_0670](https://github.com/user-attachments/assets/c8ca23d7-b235-4503-a420-e0f7a58ebf77)
+![IMG_0674](https://github.com/user-attachments/assets/c05838e7-57ff-4107-be69-88d3190024c8)
+![IMG_0678](https://github.com/user-attachments/assets/02dd14c1-3749-4162-88d5-c633f44fb3bb)
 
 ## Hardware & Software Requirements
 * **Hardware:** M5StickC Plus2 (ESP32-PICO-V3-02) or any ESP32 development board.
