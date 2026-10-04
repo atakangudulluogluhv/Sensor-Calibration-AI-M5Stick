@@ -1,37 +1,46 @@
-# Edge AI Sensor Calibration on ESP32 (M5StickC Plus2)
+# Sensor Calibration on an M5StickC Plus2
 
-## Overview
-This repository demonstrates a complete **Edge AI / TinyML** pipeline for real-time sensor calibration using an ESP32 microcontroller (M5StickC Plus2). It addresses common hardware constraints—such as sensor drift, bias, and noise—by running Machine Learning algorithms directly on the edge device, eliminating the need for cloud computing or heavy external processing.
+Embedded part of our Deep Learning (DIL700) term paper at University West.
+The model comparison in Python is in
+[Sensor-Calibration-AI-HV](https://github.com/atakangudulluogluhv/Sensor-Calibration-AI-HV).
 
-Using a PM2.5 air quality section from "Air Pollution on Seuol" dataset, the project simulates a faulty sensor and corrects it in real-time using mathematical inferences derived from a trained Machine Learning model. 
+A sensor that drifts reads y = f(x) instead of the true value x; calibration
+means learning f⁻¹. Here the ESP32 does that on its own: it trains a linear
+model with gradient descent on the device, then uses it to correct the
+readings live on the screen.
 
-## Key Features
-* **Hardware-in-the-Loop Simulation:** Runs a localized dataset directly on the ESP32 to simulate live sensor readings without needing the physical PM2.5 sensor.
-* **Lightning-Fast Inference:** Executes calibration mathematics (`y = mx + b`) in less than a millisecond per reading.
-* **On-Device Training (OLS & SGD):** Includes a standalone training script where the ESP32 calculates its own weights and biases using Ordinary Least Squares and Gradient Descent algorithms—no, Python backend required.
-* **Lightweight C++ Implementation:** Bypasses heavy ML libraries (like TensorFlow Lite) for highly optimized, low-memory C++ execution.
+## How it works
 
-##  Repository Structure
-* `Sensor Calibration using AI.ipynb`: The primary data science notebook. Contains dataset analysis, simulated sensor degradation (15% drift + offset), and Scikit-Learn model evaluations (Linear Regression, Random Forest, SVR, RNN).
-* `Measurement_summary_ilk_3000.csv`: A sample subset of the PM2.5 dataset used for the simulation.
-* `dataset.h`: The C++ header file containing the 3000 data points, converted into a lightweight array for onboard ESP32 memory storage.
-* `Edge_AI_Inference.ino`: The main Arduino sketch. It pulls raw data, applies the pre-trained weights, and displays the true vs. calibrated values on the M5StickC screen.
-* `On_Device_Training.ino`: An advanced sketch where the ESP32 trains the linear regressor model entirely on its own processor.
+- `dataset.h` holds 3000 PM2.5 values from the
+  [Air Pollution in Seoul](https://www.kaggle.com/datasets/bappekim/air-pollution-in-seoul)
+  dataset, stored as a C array so no SD card or sensor is needed.
+- The faulty sensor is simulated as `reading = 1.15 * true + 5`
+  (15% gain error plus an offset).
+- On boot the device runs 5000 epochs of SGD for `y = w*x + b` and shows
+  the loss every 100 epochs. When it finishes it shows the training time and
+  the learned `w` and `b`.
+- After that it loops through the dataset showing the real, faulty and
+  calibrated value for each sample.
 
-## Results & Visualization
-By extracting the weights from the Python-trained model and deploying them to the microcontroller, the ESP32 successfully suppresses the simulated noise and drift. 
-![IMG_0670](https://github.com/user-attachments/assets/c8ca23d7-b235-4503-a420-e0f7a58ebf77)
-![IMG_0674](https://github.com/user-attachments/assets/c05838e7-57ff-4107-be69-88d3190024c8)
-![IMG_0678](https://github.com/user-attachments/assets/02dd14c1-3749-4162-88d5-c633f44fb3bb)
+No ML library is used; the training loop and inference are plain C++.
 
-## Hardware & Software Requirements
-* **Hardware:** M5StickC Plus2 (ESP32-PICO-V3-02) or any ESP32 development board.
-* **Framework:** Arduino IDE (with `M5Unified` library installed).
-* **Data Science Stack:** Python 3.x, Pandas, Numpy, Scikit-Learn, Matplotlib.
+The simulated drift is linear, so a linear model can undo it exactly: the
+ideal values are w = 1/1.15 ≈ 0.870 and b = −5/1.15 ≈ −4.35. After 5000
+epochs the same loop run in Python ends at w ≈ 0.868, b ≈ −4.29, with an MSE
+of about 0.001 against the true values.
+The point is to show training and inference running on a microcontroller,
+not to model a real sensor's drift.
 
-## How to Run
-1. Clone this repository to your local machine.
-2. Open the `Edge_AI_Inference.ino` file using Arduino IDE.
-3. Ensure that `dataset.h` is located in the same directory as the `.ino` sketch.
-4. Select the M5StickC Plus2 board and compile/upload the code.
-5. Watch the real-time AI calibration on the device's display.
+## Photos
+
+![Training](https://github.com/user-attachments/assets/c8ca23d7-b235-4503-a420-e0f7a58ebf77)
+![Result](https://github.com/user-attachments/assets/c05838e7-57ff-4107-be69-88d3190024c8)
+![Calibrated readings](https://github.com/user-attachments/assets/02dd14c1-3749-4162-88d5-c633f44fb3bb)
+
+## Running
+
+1. Install the `M5Unified` library in the Arduino IDE.
+2. Open `sensor_calibration/sensor_calibration.ino`.
+3. Select the M5StickC Plus2 board and upload.
+
+Training progress is also printed on the serial port at 115200 baud.
